@@ -485,6 +485,10 @@
 
 	const getAvailableSettings = () => {
 		return allSettings.filter((tab) => {
+			if (tab.id === 'about') {
+				return false;
+			}
+
 			if (tab.id === 'connections') {
 				return $config?.features?.enable_direct_connections;
 			}
