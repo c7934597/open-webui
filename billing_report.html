@@ -1,0 +1,2185 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 平台用量成本報表</title>
+  <style>
+    :root {
+      --bg: #f4f6fa;
+      --card: #ffffff;
+      --border: #e2e6ee;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --secondary-bg: #eef2f7;
+      --aws: #ff9900;
+      --gcp: #4285f4;
+      --azure: #0078d4;
+      --unknown: #9ca3af;
+      --danger: #dc2626;
+      --warn: #f59e0b;
+      --success: #059669;
+      --hover: #f9fafb;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      color: white;
+      padding: 24px 32px;
+    }
+
+    header h1 {
+      margin: 0 0 4px 0;
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    header .subtitle {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 13px;
+    }
+
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px 32px 64px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+
+    .card h2 {
+      margin: 0 0 16px 0;
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card h2 .step {
+      background: var(--primary);
+      color: white;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 120px 1fr 120px 1fr;
+      gap: 10px 16px;
+      align-items: center;
+    }
+
+    .form-grid label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="date"],
+    input[type="number"],
+    select {
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: white;
+      font-family: inherit;
+      width: 100%;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    input[type="number"] {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      margin: 8px 0 0;
+    }
+
+    .hint.warn {
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      padding: 8px 12px;
+      border-radius: 6px;
+    }
+
+    button {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--hover);
+      border-color: var(--muted);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button.primary {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    button.primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    button.secondary {
+      background: var(--secondary-bg);
+    }
+
+    button.danger-outline {
+      color: var(--danger);
+      border-color: #fecaca;
+    }
+
+    button.danger-outline:hover:not(:disabled) {
+      background: #fef2f2;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    table th,
+    table td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    table tbody tr:hover {
+      background: var(--hover);
+    }
+
+    table td.num,
+    table th.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    table td input {
+      padding: 5px 8px;
+      font-size: 13px;
+    }
+
+    table td input.patterns-input {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .cloud-chip {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .cloud-chip.AWS {
+      background: var(--aws);
+    }
+
+    .cloud-chip.GCP {
+      background: var(--gcp);
+    }
+
+    .cloud-chip.Azure {
+      background: var(--azure);
+    }
+
+    .cloud-chip.未對應 {
+      background: var(--unknown);
+    }
+
+    #progress {
+      background: var(--secondary-bg);
+      border-radius: 6px;
+      overflow: hidden;
+      height: 8px;
+      margin-top: 12px;
+    }
+
+    #progressBar {
+      height: 100%;
+      background: var(--primary);
+      width: 0;
+      transition: width 0.3s;
+    }
+
+    #status {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      min-height: 20px;
+    }
+
+    #status.error {
+      color: var(--danger);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .summary-tile {
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px;
+    }
+
+    .summary-tile .label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .summary-tile .value {
+      font-size: 22px;
+      font-weight: 600;
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .summary-tile.cost .value {
+      color: var(--primary);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 2px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      padding: 8px 14px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      font-size: 13px;
+    }
+
+    .tab:hover {
+      color: var(--text);
+      background: transparent;
+    }
+
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      font-weight: 600;
+    }
+
+    .report-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .report-header .actions {
+      margin: 0;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    details summary {
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      user-select: none;
+    }
+
+    details[open] summary {
+      color: var(--text);
+    }
+
+    code {
+      background: var(--secondary-bg);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+
+    .empty-row td {
+      text-align: center;
+      color: var(--muted);
+      padding: 20px;
+    }
+
+    .btn-icon {
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .help-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--muted);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      margin-left: 2px;
+      cursor: help;
+      text-transform: none;
+      vertical-align: middle;
+    }
+
+    /* Charts */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) 2fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .chart-card {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px;
+      background: #fafbfc;
+    }
+
+    .chart-card.chart-full {
+      grid-column: 1 / -1;
+    }
+
+    .chart-title {
+      margin: 0 0 12px 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .empty-chart {
+      color: var(--muted);
+      text-align: center;
+      padding: 30px 0;
+      font-size: 12px;
+    }
+
+    .donut-wrap {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .donut-wrap svg {
+      flex-shrink: 0;
+    }
+
+    .donut-label-text {
+      fill: var(--muted);
+      font-size: 11px;
+    }
+
+    .donut-total-text {
+      fill: var(--text);
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .legend-list {
+      flex: 1;
+      min-width: 140px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 3px 0;
+    }
+
+    .legend-item .legend-value {
+      margin-left: auto;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .line-wrap svg text.axis-label {
+      fill: var(--muted);
+      font-size: 10px;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      justify-content: center;
+    }
+
+    .legend-item-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .hbar-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .hbar-row {
+      display: grid;
+      grid-template-columns: 180px 1fr 110px;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+    }
+
+    .hbar-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .hbar-label .hbar-sub {
+      color: var(--muted);
+      font-size: 11px;
+      margin-left: 4px;
+    }
+
+    .hbar-bar-wrap {
+      background: #eef1f5;
+      border-radius: 4px;
+      height: 18px;
+      overflow: hidden;
+    }
+
+    .hbar-bar {
+      display: flex;
+      height: 100%;
+      border-radius: 4px;
+      overflow: hidden;
+      min-width: 1px;
+    }
+
+    .bar-seg {
+      height: 100%;
+      display: inline-block;
+    }
+
+    .hbar-value {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+
+    /* Email composer */
+    textarea {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      background: white;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      width: 100%;
+      resize: vertical;
+      min-height: 220px;
+      line-height: 1.55;
+      color: var(--text);
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .field-block {
+      margin-top: 14px;
+    }
+
+    .field-block > label {
+      color: var(--muted);
+      font-size: 13px;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .checkbox-group label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .section-subtitle {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 18px 0 10px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .relay-example pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 12px 14px;
+      border-radius: 6px;
+      overflow: auto;
+      font-size: 12px;
+      margin: 8px 0 0;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      line-height: 1.45;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 10px;
+      max-width: 820px;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 4px 8px;
+      color: var(--muted);
+    }
+    .modal-close:hover { color: var(--text); }
+
+    .modal-body {
+      padding: 20px;
+      overflow: auto;
+      flex: 1;
+    }
+
+    .modal-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .preview-meta {
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      font-size: 13px;
+    }
+
+    .preview-meta div { margin-bottom: 4px; }
+    .preview-meta div:last-child { margin-bottom: 0; }
+    .preview-meta .label {
+      color: var(--muted);
+      display: inline-block;
+      width: 56px;
+    }
+
+    .preview-body {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+    }
+
+    .preview-body table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 13px;
+      margin: 8px 0;
+    }
+    .preview-body table th,
+    .preview-body table td {
+      border: 1px solid #e2e6ee;
+      padding: 6px 10px;
+      text-align: left;
+    }
+    .preview-body table th {
+      background: #f4f6fa;
+    }
+
+    #mailSendStatus {
+      font-size: 13px;
+      align-self: center;
+      margin-left: 4px;
+    }
+
+    @media (max-width: 800px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hbar-row {
+        grid-template-columns: 110px 1fr 90px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>AI 平台用量成本報表</h1>
+    <p class="subtitle">依使用者 / 模型 / 雲端，拆分內部 AI 帳單</p>
+  </header>
+  <main>
+
+    <section class="card">
+      <h2><span class="step">1</span>API 連線設定</h2>
+      <div class="form-grid">
+        <label for="apiUrl">Base URL</label>
+        <input id="apiUrl" type="text" placeholder="http://localhost:8080" />
+        <label for="apiKey">API Key</label>
+        <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" />
+        <label for="startDate">開始日期</label>
+        <input id="startDate" type="date" />
+        <label for="endDate">結束日期</label>
+        <input id="endDate" type="date" />
+      </div>
+      <p class="hint">
+        API Key 在 AI 平台 → 設定 → 帳戶 → API 金鑰 產生（需 admin 權限）。<br />
+        所有輸入只保存在您瀏覽器的 localStorage，不會送到其他地方。日期範圍以訊息的 <code>created_at</code> 為準。
+      </p>
+    </section>
+
+    <section class="card">
+      <h2><span class="step">2</span>模型定價 (USD / 百萬 tokens)</h2>
+      <p class="hint warn">
+        ⚠️ 預填為近似參考值，請依 AWS / GCP / Azure 官方 console 最新價格調整。
+        <br />Model ID 比對字串會以不分大小寫的<strong>子字串</strong>比對 Open WebUI 中訊息的 <code>model_id</code>。
+        多個關鍵字以半形逗號分隔。最後更新日：<span id="pricingUpdatedAt">—</span>
+      </p>
+      <div style="overflow-x: auto;">
+        <table id="pricingTable">
+          <thead>
+            <tr>
+              <th style="width:90px;">雲端</th>
+              <th style="width:220px;">顯示名稱</th>
+              <th>Model ID 比對字串</th>
+              <th class="num" style="width:120px;">Input $/1M</th>
+              <th class="num" style="width:120px;">Output $/1M</th>
+              <th style="width:60px;"></th>
+            </tr>
+          </thead>
+          <tbody id="pricingBody"></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button id="addPricingRow">+ 新增列</button>
+        <button id="resetPricing" class="secondary">重設為預設</button>
+        <button id="savePricing" class="secondary">儲存定價</button>
+        <span class="small" id="pricingSaveStatus" style="align-self:center;"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span class="step">3</span>抓取與計算</h2>
+      <div class="actions">
+        <button id="fetchBtn" class="primary">抓取用量資料並計算</button>
+        <button id="cancelBtn" class="danger-outline" style="display:none;">取消</button>
+      </div>
+      <div id="progress" style="display:none;">
+        <div id="progressBar"></div>
+      </div>
+      <div id="status"></div>
+    </section>
+
+    <section class="card">
+      <h2><span class="step">4</span>信件設定 與 寄送</h2>
+
+      <details>
+        <summary>📮 SMTP 伺服器設定（用於透過中繼服務寄送）</summary>
+        <div class="form-grid" style="margin-top:12px;">
+          <label for="smtpHost">SMTP 主機</label>
+          <input id="smtpHost" type="text" placeholder="smtp.office365.com" autocomplete="off" />
+          <label for="smtpPort">埠號</label>
+          <input id="smtpPort" type="number" placeholder="587" />
+          <label for="smtpSecure">加密方式</label>
+          <select id="smtpSecure">
+            <option value="starttls">STARTTLS（常見：587）</option>
+            <option value="ssl">SSL/TLS（常見：465）</option>
+            <option value="none">不加密</option>
+          </select>
+          <label for="smtpUser">SMTP 帳號</label>
+          <input id="smtpUser" type="text" autocomplete="off" />
+          <label for="smtpPass">SMTP 密碼</label>
+          <input id="smtpPass" type="password" autocomplete="off" />
+          <label for="smtpFromName">寄件人名稱</label>
+          <input id="smtpFromName" type="text" placeholder="AI 部門帳務" />
+          <label for="smtpFromEmail">寄件人 Email</label>
+          <input id="smtpFromEmail" type="text" placeholder="ai-billing@example.com" />
+          <label for="smtpRelayUrl">SMTP Relay API URL</label>
+          <input id="smtpRelayUrl" type="text" placeholder="http://localhost:8081/send" />
+        </div>
+        <p class="hint warn" style="margin-top:12px;">
+          ⚠️ 瀏覽器無法直接連 SMTP 伺服器，需要您自行架設一個小型 HTTP→SMTP 中繼服務（範例見下方），把上面的 URL 填入。
+          <br />若不想架設中繼服務，可改用「💾 下載 .eml」由您本機的 Outlook / Apple Mail / Thunderbird 直接寄送。
+          <br />SMTP 帳號密碼僅儲存在您本機的 localStorage（明文），請評估安全性後使用。
+        </p>
+        <details class="relay-example" style="margin-top:10px;">
+          <summary>📋 範例：簡易 SMTP 中繼服務（Python Flask，~30 行）</summary>
+          <pre><code># pip install flask flask-cors
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import smtplib, ssl, base64
+from email.message import EmailMessage
+
+app = Flask(__name__); CORS(app)
+
+@app.post('/send')
+def send():
+    p = request.get_json()
+    msg = EmailMessage()
+    msg['From'] = f"{p['from']['name']} &lt;{p['from']['email']}&gt;"
+    msg['To'] = ', '.join(p['to'])
+    if p.get('cc'): msg['Cc'] = ', '.join(p['cc'])
+    msg['Subject'] = p['subject']
+    msg.set_content('請以 HTML 方式檢視此信件')
+    msg.add_alternative(p['html'], subtype='html')
+    for a in p.get('attachments', []):
+        msg.add_attachment(base64.b64decode(a['content']),
+            maintype='application', subtype='octet-stream',
+            filename=a['filename'])
+    s = p['smtp']
+    recipients = list(p['to']) + list(p.get('cc', [])) + list(p.get('bcc', []))
+    if s['secure'] == 'ssl':
+        srv = smtplib.SMTP_SSL(s['host'], s['port'], context=ssl.create_default_context())
+    else:
+        srv = smtplib.SMTP(s['host'], s['port'])
+        if s['secure'] == 'starttls':
+            srv.starttls(context=ssl.create_default_context())
+    if s.get('user'): srv.login(s['user'], s['pass'])
+    srv.send_message(msg, to_addrs=recipients); srv.quit()
+    return jsonify(ok=True)
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=8081)
+</code></pre>
+        </details>
+      </details>
+
+      <h3 class="section-subtitle">✉️ 信件模板</h3>
+      <div class="form-grid">
+        <label for="mailTo">收件者 (To)</label>
+        <input id="mailTo" type="text" placeholder="a@example.com, b@example.com" />
+        <label for="mailCc">副本 (CC)</label>
+        <input id="mailCc" type="text" />
+        <label for="mailBcc">密件副本 (BCC)</label>
+        <input id="mailBcc" type="text" />
+        <label for="mailSubject">主旨</label>
+        <input id="mailSubject" type="text" />
+      </div>
+
+      <div class="field-block">
+        <label for="mailBody">內文（HTML 格式，可使用 <code>{{變數}}</code>）</label>
+        <textarea id="mailBody" spellcheck="false"></textarea>
+      </div>
+
+      <div class="field-block">
+        <label>附加檔案</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" id="attachByUser" checked> CSV（依使用者）</label>
+          <label><input type="checkbox" id="attachDetail" checked> CSV（明細）</label>
+          <label><input type="checkbox" id="attachByCloud" checked> CSV（依雲端）</label>
+        </div>
+      </div>
+
+      <p class="hint" style="margin-top:12px;">
+        可用變數：
+        <code>{{startDate}}</code>、<code>{{endDate}}</code>、<code>{{reportPeriod}}</code>、
+        <code>{{totalCost}}</code>、<code>{{userCount}}</code>、<code>{{modelCount}}</code>、
+        <code>{{messageCount}}</code>、<code>{{inputTokens}}</code>、<code>{{outputTokens}}</code>、
+        <code>{{userTable}}</code>、<code>{{cloudTable}}</code>、<code>{{topUsers}}</code>、
+        <code>{{generatedAt}}</code>
+      </p>
+
+      <div class="actions">
+        <button id="saveMailSettings" class="secondary">儲存信件設定</button>
+        <button id="resetMailTemplate">重設為預設模板</button>
+        <span class="small" id="mailSaveStatus" style="align-self:center;"></span>
+      </div>
+    </section>
+
+    <section id="report" class="card" style="display:none;">
+      <div class="report-header">
+        <h2><span class="step">5</span>帳單報表</h2>
+        <div class="actions">
+          <button id="exportByUser">匯出 CSV（依使用者）</button>
+          <button id="exportDetail">匯出 CSV（明細）</button>
+          <button id="exportByCloud">匯出 CSV（依雲端）</button>
+          <button id="previewMail" class="secondary">📧 預覽信件</button>
+          <button id="downloadEml" class="secondary">💾 下載 .eml</button>
+          <button id="sendMail" class="primary">📤 寄送報表</button>
+          <span id="mailSendStatus"></span>
+        </div>
+      </div>
+      <div id="summary" class="summary-grid"></div>
+      <div id="charts" class="charts-grid">
+        <div class="chart-card">
+          <h3 class="chart-title">雲端成本佔比</h3>
+          <div id="chartCloud"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">每日成本趨勢</h3>
+          <div id="chartDaily"></div>
+        </div>
+        <div class="chart-card chart-full">
+          <h3 class="chart-title">使用者成本排行 (Top 10，依雲端分段)</h3>
+          <div id="chartUsers"></div>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="byUser">依使用者</button>
+        <button class="tab" data-tab="byCloud">依雲端</button>
+        <button class="tab" data-tab="detail">明細 (使用者 × 模型)</button>
+        <button class="tab" data-tab="unknown">未對應模型</button>
+      </div>
+      <div id="tabByUser" class="tab-content"></div>
+      <div id="tabByCloud" class="tab-content" style="display:none;"></div>
+      <div id="tabDetail" class="tab-content" style="display:none;"></div>
+      <div id="tabUnknown" class="tab-content" style="display:none;"></div>
+    </section>
+
+  </main>
+
+  <script>
+    'use strict';
+
+    const STORAGE_KEY = 'openwebui_billing_v1';
+
+    const DEFAULT_PRICING = [
+      { cloud: 'AWS', name: 'Claude Opus 4.7 (Bedrock)', patterns: 'claude-opus-4-7, claude-opus-4.7, anthropic.claude-opus-4', inputPrice: 15.00, outputPrice: 75.00 },
+      { cloud: 'AWS', name: 'Claude Sonnet 4.6 (Bedrock)', patterns: 'claude-sonnet-4-6, claude-sonnet-4.6, anthropic.claude-sonnet-4', inputPrice: 3.00, outputPrice: 15.00 },
+      { cloud: 'GCP', name: 'Gemini Flash 3', patterns: 'gemini-flash-3, gemini-3-flash', inputPrice: 0.075, outputPrice: 0.30 },
+      { cloud: 'GCP', name: 'Gemini Pro 3.1', patterns: 'gemini-pro-3.1, gemini-3.1-pro, gemini-3-pro', inputPrice: 1.25, outputPrice: 5.00 },
+      { cloud: 'Azure', name: 'GPT-5.4', patterns: 'gpt-5.4, gpt-5-4', inputPrice: 2.50, outputPrice: 10.00 },
+      { cloud: 'Azure', name: 'GPT-5.4 Pro', patterns: 'gpt-5.4-pro, gpt-5-4-pro, gpt-5.4pro', inputPrice: 15.00, outputPrice: 60.00 },
+      { cloud: 'Azure', name: 'Grok-4-20 Reasoning', patterns: 'grok-4-20-reasoning', inputPrice: 5.00, outputPrice: 15.00 },
+      { cloud: 'Azure', name: 'Grok-4-20 Non-Reasoning', patterns: 'grok-4-20-non-reasoning', inputPrice: 2.00, outputPrice: 10.00 },
+    ];
+
+    let reportData = null;
+    let fetchAborter = null;
+
+    // ---------- Settings persistence ----------
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (e) { return null; }
+    }
+    function saveSettings(patch) {
+      const cur = loadSettings() || {};
+      const next = { ...cur, ...patch, updatedAt: new Date().toISOString() };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    }
+
+    function initFromStorage() {
+      const s = loadSettings() || {};
+      if (s.apiUrl) document.getElementById('apiUrl').value = s.apiUrl;
+      if (s.apiKey) document.getElementById('apiKey').value = s.apiKey;
+
+      const today = new Date();
+      const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      document.getElementById('startDate').value = s.startDate || firstOfMonth.toISOString().slice(0, 10);
+      document.getElementById('endDate').value = s.endDate || today.toISOString().slice(0, 10);
+
+      renderPricing(s.pricing || DEFAULT_PRICING);
+      if (s.pricingUpdatedAt) document.getElementById('pricingUpdatedAt').textContent = s.pricingUpdatedAt;
+    }
+
+    // ---------- Pricing table ----------
+    function renderPricing(rows) {
+      const tbody = document.getElementById('pricingBody');
+      tbody.innerHTML = '';
+      rows.forEach((row, idx) => tbody.appendChild(buildPricingRow(row, idx)));
+    }
+
+    function buildPricingRow(row, idx) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+    <td>
+      <select class="cloud-select">
+        <option value="AWS">AWS</option>
+        <option value="GCP">GCP</option>
+        <option value="Azure">Azure</option>
+        <option value="Other">Other</option>
+      </select>
+    </td>
+    <td><input type="text" class="name-input" /></td>
+    <td><input type="text" class="patterns-input" placeholder="逗號分隔關鍵字" /></td>
+    <td class="num"><input type="number" step="0.001" min="0" class="input-price" /></td>
+    <td class="num"><input type="number" step="0.001" min="0" class="output-price" /></td>
+    <td><button class="btn-icon danger-outline remove-row">刪除</button></td>
+  `;
+      tr.querySelector('.cloud-select').value = row.cloud || 'Other';
+      tr.querySelector('.name-input').value = row.name || '';
+      tr.querySelector('.patterns-input').value = row.patterns || '';
+      tr.querySelector('.input-price').value = row.inputPrice ?? 0;
+      tr.querySelector('.output-price').value = row.outputPrice ?? 0;
+      tr.querySelector('.remove-row').addEventListener('click', () => tr.remove());
+      return tr;
+    }
+
+    function readPricing() {
+      const rows = [];
+      document.querySelectorAll('#pricingBody tr').forEach(tr => {
+        const cloud = tr.querySelector('.cloud-select').value;
+        const name = tr.querySelector('.name-input').value.trim();
+        const patterns = tr.querySelector('.patterns-input').value.trim();
+        const inputPrice = parseFloat(tr.querySelector('.input-price').value) || 0;
+        const outputPrice = parseFloat(tr.querySelector('.output-price').value) || 0;
+        if (!name) return;
+        rows.push({ cloud, name, patterns, inputPrice, outputPrice });
+      });
+      return rows;
+    }
+
+    function parsePatterns(patternsStr) {
+      return (patternsStr || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    }
+
+    function matchModel(modelId, pricing) {
+      if (!modelId) return null;
+      const lower = String(modelId).toLowerCase();
+      for (const p of pricing) {
+        for (const pat of parsePatterns(p.patterns)) {
+          if (lower.includes(pat)) return p;
+        }
+      }
+      return null;
+    }
+
+    // ---------- Fetching ----------
+    function normalizeApiUrl(raw) {
+      let url = (raw || '').trim().replace(/\/$/, '');
+      if (!url) return '';
+      if (!/^https?:\/\//i.test(url)) url = 'http://' + url;
+      return url;
+    }
+
+    async function fetchData(signal) {
+      const apiUrlInput = document.getElementById('apiUrl');
+      const apiUrl = normalizeApiUrl(apiUrlInput.value);
+      if (apiUrl && apiUrl !== apiUrlInput.value.trim().replace(/\/$/, '')) {
+        apiUrlInput.value = apiUrl;
+        saveSettings({ apiUrl });
+      }
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      if (!apiUrl) throw new Error('請輸入 Base URL');
+      if (!apiKey) throw new Error('請輸入 API Key');
+
+      const startEpoch = startDate ? Math.floor(new Date(startDate + 'T00:00:00').getTime() / 1000) : 0;
+      const endEpoch = endDate ? Math.floor(new Date(endDate + 'T23:59:59').getTime() / 1000) : Math.floor(Date.now() / 1000) + 86400;
+
+      const headers = { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' };
+
+      setStatus('抓取使用者清單中...');
+      const usersResp = await fetch(`${apiUrl}/api/v1/users/all`, { headers, signal });
+      if (!usersResp.ok) {
+        const body = await usersResp.text().catch(() => '');
+        throw new Error(`取得使用者失敗 (${usersResp.status}): ${body.slice(0, 200)}`);
+      }
+      const usersData = await usersResp.json();
+      const users = Array.isArray(usersData) ? usersData : (usersData.users || usersData.data || []);
+      if (!users.length) throw new Error('沒有取得任何使用者 — 請確認 API Key 具 admin 權限');
+
+      setStatus(`找到 ${users.length} 位使用者，開始抓取訊息...`);
+
+      const allMessages = [];
+      let totalApiCalls = 0;
+
+      for (let i = 0; i < users.length; i++) {
+        if (signal.aborted) throw new Error('已取消');
+        const u = users[i];
+        const uname = u.name || u.email || u.id;
+        setProgress(i + 1, users.length, `(${i + 1}/${users.length}) ${uname}`);
+
+        let skip = 0;
+        const PAGE = 100;
+        while (true) {
+          if (signal.aborted) throw new Error('已取消');
+          const msgUrl = `${apiUrl}/api/v1/analytics/messages?user_id=${encodeURIComponent(u.id)}&skip=${skip}&limit=${PAGE}`;
+          const r = await fetch(msgUrl, { headers, signal });
+          totalApiCalls++;
+          if (!r.ok) {
+            const body = await r.text().catch(() => '');
+            throw new Error(`使用者 ${uname} 訊息抓取失敗 (${r.status}): ${body.slice(0, 200)}`);
+          }
+          const msgs = await r.json();
+          if (!Array.isArray(msgs) || msgs.length === 0) break;
+          for (const m of msgs) {
+            m._user_id = u.id;
+            m._user_name = u.name || u.email || u.id;
+            m._user_email = u.email || '';
+          }
+          allMessages.push(...msgs);
+          if (msgs.length < PAGE) break;
+          skip += PAGE;
+        }
+      }
+
+      setStatus(`收到 ${allMessages.length} 筆訊息（${totalApiCalls} 次 API 呼叫），套用日期篩選與聚合中...`);
+
+      const inRange = allMessages.filter(m => {
+        const ts = Number(m.created_at) || 0;
+        return ts >= startEpoch && ts <= endEpoch;
+      });
+
+      const withTokens = inRange.filter(m => m.usage && ((m.usage.input_tokens ?? 0) > 0 || (m.usage.output_tokens ?? 0) > 0));
+
+      const pricing = readPricing();
+      const byUserModel = new Map();
+      const byDate = new Map();
+      const unknownModelCounts = new Map();
+
+      for (const m of withTokens) {
+        const modelId = m.model_id || '(unknown)';
+        const match = matchModel(modelId, pricing);
+        const cloud = match ? match.cloud : '未對應';
+        const inTok = Number(m.usage?.input_tokens) || 0;
+        const outTok = Number(m.usage?.output_tokens) || 0;
+        const inCost = match ? (inTok / 1e6) * match.inputPrice : 0;
+        const outCost = match ? (outTok / 1e6) * match.outputPrice : 0;
+        const total = inCost + outCost;
+
+        const key = `${m._user_id}|${modelId}`;
+        let row = byUserModel.get(key);
+        if (!row) {
+          row = {
+            user_id: m._user_id, user_name: m._user_name, user_email: m._user_email,
+            model_id: modelId, _match: match, cloud,
+            input_tokens: 0, output_tokens: 0, messages: 0,
+            input_cost: 0, output_cost: 0, total_cost: 0,
+          };
+          byUserModel.set(key, row);
+        }
+        row.input_tokens += inTok;
+        row.output_tokens += outTok;
+        row.input_cost += inCost;
+        row.output_cost += outCost;
+        row.total_cost += total;
+        row.messages += 1;
+
+        const ts = Number(m.created_at) || 0;
+        const dateStr = new Date(ts * 1000).toISOString().slice(0, 10);
+        let day = byDate.get(dateStr);
+        if (!day) {
+          day = { AWS: 0, GCP: 0, Azure: 0, '未對應': 0, Other: 0 };
+          byDate.set(dateStr, day);
+        }
+        day[cloud] = (day[cloud] || 0) + total;
+
+        if (!match) unknownModelCounts.set(modelId, (unknownModelCounts.get(modelId) || 0) + 1);
+      }
+
+      const detailRows = [...byUserModel.values()].map(r => ({
+        ...r,
+        model_display: r._match ? r._match.name : r.model_id,
+        input_price: r._match ? r._match.inputPrice : 0,
+        output_price: r._match ? r._match.outputPrice : 0,
+      })).sort((a, b) => b.total_cost - a.total_cost);
+
+      return {
+        detailRows,
+        byDate: [...byDate.entries()].sort((a, b) => a[0].localeCompare(b[0])),
+        unknownModelCounts: [...unknownModelCounts.entries()].sort((a, b) => b[1] - a[1]),
+        range: { startDate, endDate },
+        counts: {
+          users: users.length,
+          messagesFetched: allMessages.length,
+          messagesInRange: inRange.length,
+          messagesWithTokens: withTokens.length,
+          apiCalls: totalApiCalls,
+        },
+      };
+    }
+
+    // ---------- Status / progress ----------
+    function setStatus(text, isError) {
+      const el = document.getElementById('status');
+      el.textContent = text || '';
+      el.classList.toggle('error', !!isError);
+    }
+    function setProgress(done, total, label) {
+      document.getElementById('progress').style.display = 'block';
+      const pct = total ? Math.min(100, (done / total) * 100) : 0;
+      document.getElementById('progressBar').style.width = `${pct}%`;
+      setStatus(label || '');
+    }
+    function hideProgress() { document.getElementById('progress').style.display = 'none'; }
+
+    // ---------- Rendering ----------
+    function fmt$(n) { return `$${(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`; }
+    function fmtInt(n) { return (n || 0).toLocaleString('en-US'); }
+    function cloudChip(cloud) { return `<span class="cloud-chip ${cloud}">${cloud}</span>`; }
+
+    function renderReport(data) {
+      reportData = data;
+      document.getElementById('report').style.display = '';
+
+      const totalCost = data.detailRows.reduce((s, r) => s + r.total_cost, 0);
+      const totalInput = data.detailRows.reduce((s, r) => s + r.input_tokens, 0);
+      const totalOutput = data.detailRows.reduce((s, r) => s + r.output_tokens, 0);
+      const userSet = new Set(data.detailRows.map(r => r.user_id));
+      const modelSet = new Set(data.detailRows.map(r => r.model_display));
+
+      document.getElementById('summary').innerHTML = `
+    <div class="summary-tile cost"><div class="label">總成本 (USD)</div><div class="value">${fmt$(totalCost)}</div></div>
+    <div class="summary-tile"><div class="label">使用者數</div><div class="value">${fmtInt(userSet.size)}</div></div>
+    <div class="summary-tile"><div class="label">模型數</div><div class="value">${fmtInt(modelSet.size)}</div></div>
+    <div class="summary-tile"><div class="label">Input Tokens</div><div class="value">${fmtInt(totalInput)}</div></div>
+    <div class="summary-tile"><div class="label">Output Tokens</div><div class="value">${fmtInt(totalOutput)}</div></div>
+    <div class="summary-tile"><div class="label">計費訊息數</div><div class="value">${fmtInt(data.counts.messagesWithTokens)}</div></div>
+  `;
+
+      renderCharts(data);
+      renderByUser(data);
+      renderByCloud(data);
+      renderDetail(data);
+      renderUnknown(data);
+    }
+
+    // ---------- Charts (inline SVG, no external deps) ----------
+    const CLOUD_COLORS = { AWS: '#ff9900', GCP: '#4285f4', Azure: '#0078d4', '未對應': '#9ca3af', Other: '#9ca3af' };
+
+    function renderCharts(data) {
+      renderCloudDonut(data);
+      renderDailyLine(data);
+      renderUserHbar(data);
+    }
+
+    function renderCloudDonut(data) {
+      const container = document.getElementById('chartCloud');
+      const agg = { AWS: 0, GCP: 0, Azure: 0, '未對應': 0 };
+      for (const r of data.detailRows) agg[r.cloud] = (agg[r.cloud] || 0) + r.total_cost;
+      const entries = Object.entries(agg).filter(([, v]) => v > 0).map(([k, v]) => ({ label: k, value: v, color: CLOUD_COLORS[k] || '#9ca3af' }));
+      const total = entries.reduce((s, e) => s + e.value, 0);
+      if (!total) { container.innerHTML = '<div class="empty-chart">無資料</div>'; return; }
+
+      const size = 180, r = 72, innerR = 46, cx = size / 2, cy = size / 2;
+      let paths = '';
+      if (entries.length === 1) {
+        const midR = (r + innerR) / 2;
+        paths = `<circle cx="${cx}" cy="${cy}" r="${midR}" fill="none" stroke="${entries[0].color}" stroke-width="${r - innerR}" />`;
+      } else {
+        let angle = -Math.PI / 2;
+        for (const d of entries) {
+          const slice = (d.value / total) * Math.PI * 2;
+          const next = angle + slice;
+          const x1 = cx + r * Math.cos(angle), y1 = cy + r * Math.sin(angle);
+          const x2 = cx + r * Math.cos(next), y2 = cy + r * Math.sin(next);
+          const x3 = cx + innerR * Math.cos(next), y3 = cy + innerR * Math.sin(next);
+          const x4 = cx + innerR * Math.cos(angle), y4 = cy + innerR * Math.sin(angle);
+          const large = slice > Math.PI ? 1 : 0;
+          paths += `<path d="M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerR} ${innerR} 0 ${large} 0 ${x4} ${y4} Z" fill="${d.color}" />`;
+          angle = next;
+        }
+      }
+
+      const legend = entries.map(d => {
+        const pct = (d.value / total * 100).toFixed(1);
+        return `<div class="legend-item"><span class="legend-dot" style="background:${d.color}"></span><span>${d.label}</span><span class="legend-value">${fmt$(d.value)} <span class="small">(${pct}%)</span></span></div>`;
+      }).join('');
+
+      container.innerHTML = `
+    <div class="donut-wrap">
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+        ${paths}
+        <text x="${cx}" y="${cy - 4}" text-anchor="middle" class="donut-label-text">總成本</text>
+        <text x="${cx}" y="${cy + 14}" text-anchor="middle" class="donut-total-text">${fmt$(total)}</text>
+      </svg>
+      <div class="legend-list">${legend}</div>
+    </div>
+  `;
+    }
+
+    function renderDailyLine(data) {
+      const container = document.getElementById('chartDaily');
+      if (!data.byDate || !data.byDate.length) { container.innerHTML = '<div class="empty-chart">無資料</div>'; return; }
+
+      const clouds = ['AWS', 'GCP', 'Azure', '未對應'].filter(c =>
+        data.byDate.some(([, d]) => (d[c] || 0) > 0)
+      );
+      if (!clouds.length) { container.innerHTML = '<div class="empty-chart">無資料</div>'; return; }
+
+      const W = 600, H = 200, padL = 56, padR = 16, padT = 10, padB = 28;
+      const innerW = W - padL - padR, innerH = H - padT - padB;
+
+      let maxVal = 0;
+      for (const [, d] of data.byDate) for (const c of clouds) maxVal = Math.max(maxVal, d[c] || 0);
+      if (maxVal <= 0) maxVal = 1;
+      const pow = Math.pow(10, Math.floor(Math.log10(maxVal)));
+      maxVal = Math.ceil(maxVal / pow * 2) / 2 * pow;
+
+      const dates = data.byDate.map(([d]) => d);
+      const xOf = i => dates.length === 1 ? padL + innerW / 2 : padL + (i / (dates.length - 1)) * innerW;
+      const yOf = v => padT + innerH - (v / maxVal) * innerH;
+
+      let grid = '';
+      for (let i = 0; i <= 4; i++) {
+        const y = padT + i * innerH / 4;
+        const val = maxVal * (1 - i / 4);
+        grid += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#e5e7eb" stroke-width="1" />`;
+        grid += `<text x="${padL - 6}" y="${y + 3}" text-anchor="end" class="axis-label">${fmt$(val)}</text>`;
+      }
+
+      let xLabels = '';
+      const showIdx = dates.length > 10
+        ? [0, Math.floor(dates.length / 4), Math.floor(dates.length / 2), Math.floor(3 * dates.length / 4), dates.length - 1]
+        : dates.map((_, i) => i);
+      for (const i of showIdx) {
+        xLabels += `<text x="${xOf(i)}" y="${H - padB + 16}" text-anchor="middle" class="axis-label">${dates[i].slice(5)}</text>`;
+      }
+
+      let lines = '';
+      for (const cloud of clouds) {
+        const pts = data.byDate.map(([, d], i) => `${xOf(i)},${yOf(d[cloud] || 0)}`).join(' ');
+        lines += `<polyline fill="none" stroke="${CLOUD_COLORS[cloud]}" stroke-width="2" points="${pts}" />`;
+        data.byDate.forEach(([, d], i) => {
+          lines += `<circle cx="${xOf(i)}" cy="${yOf(d[cloud] || 0)}" r="3" fill="${CLOUD_COLORS[cloud]}" />`;
+        });
+      }
+
+      const legend = clouds.map(c => `<span class="legend-item-inline"><span class="legend-dot" style="background:${CLOUD_COLORS[c]}"></span>${c}</span>`).join('');
+
+      container.innerHTML = `
+    <div class="line-wrap">
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="width:100%;max-height:220px;">
+        ${grid}${lines}${xLabels}
+      </svg>
+      <div class="chart-legend">${legend}</div>
+    </div>
+  `;
+    }
+
+    function renderUserHbar(data) {
+      const container = document.getElementById('chartUsers');
+      const byUser = new Map();
+      for (const r of data.detailRows) {
+        const u = byUser.get(r.user_id) || { name: r.user_name, email: r.user_email, AWS: 0, GCP: 0, Azure: 0, '未對應': 0, total: 0 };
+        u[r.cloud] = (u[r.cloud] || 0) + r.total_cost;
+        u.total += r.total_cost;
+        byUser.set(r.user_id, u);
+      }
+      const top = [...byUser.values()].filter(u => u.total > 0).sort((a, b) => b.total - a.total).slice(0, 10);
+      if (!top.length) { container.innerHTML = '<div class="empty-chart">無資料</div>'; return; }
+
+      const max = top[0].total || 1;
+      const html = top.map(u => {
+        const widthPct = (u.total / max) * 100;
+        const segs = ['AWS', 'GCP', 'Azure', '未對應'].map(c => {
+          const v = u[c] || 0;
+          if (!v) return '';
+          const segPct = (v / u.total) * 100;
+          return `<span class="bar-seg" style="width:${segPct}%;background:${CLOUD_COLORS[c]};" title="${c}: ${fmt$(v)}"></span>`;
+        }).join('');
+        return `
+      <div class="hbar-row">
+        <div class="hbar-label" title="${escapeHtml(u.name)}${u.email ? ' · ' + escapeHtml(u.email) : ''}">
+          ${escapeHtml(u.name)}${u.email ? `<span class="hbar-sub">${escapeHtml(u.email)}</span>` : ''}
+        </div>
+        <div class="hbar-bar-wrap"><div class="hbar-bar" style="width:${widthPct}%;">${segs}</div></div>
+        <div class="hbar-value">${fmt$(u.total)}</div>
+      </div>
+    `;
+      }).join('');
+
+      const legend = ['AWS', 'GCP', 'Azure', '未對應']
+        .filter(c => top.some(u => (u[c] || 0) > 0))
+        .map(c => `<span class="legend-item-inline"><span class="legend-dot" style="background:${CLOUD_COLORS[c]}"></span>${c}</span>`).join('');
+
+      container.innerHTML = `<div class="hbar-list">${html}</div><div class="chart-legend" style="margin-top:10px;">${legend}</div>`;
+    }
+
+    function renderByUser(data) {
+      const byUser = new Map();
+      for (const r of data.detailRows) {
+        const u = byUser.get(r.user_id) || {
+          user_id: r.user_id, user_name: r.user_name, user_email: r.user_email,
+          input_tokens: 0, output_tokens: 0, total_cost: 0, AWS: 0, GCP: 0, Azure: 0, '未對應': 0, Other: 0,
+        };
+        u.input_tokens += r.input_tokens;
+        u.output_tokens += r.output_tokens;
+        u.total_cost += r.total_cost;
+        u[r.cloud] = (u[r.cloud] || 0) + r.total_cost;
+        byUser.set(r.user_id, u);
+      }
+      const rows = [...byUser.values()].sort((a, b) => b.total_cost - a.total_cost);
+
+      const html = `
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>使用者</th>
+          <th>Email</th>
+          <th class="num">AWS</th>
+          <th class="num">GCP</th>
+          <th class="num">Azure</th>
+          <th class="num" title="Model ID 沒有對應到任何定價列的費用（計為 $0），請切到「未對應模型」分頁查看">未對應 <span class="help-mark">?</span></th>
+          <th class="num">Input Tokens</th>
+          <th class="num">Output Tokens</th>
+          <th class="num">總成本 (USD)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.length === 0 ? '<tr class="empty-row"><td colspan="10">此區間沒有計費資料</td></tr>' :
+          rows.map((r, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${escapeHtml(r.user_name)}</td>
+              <td class="small">${escapeHtml(r.user_email || '')}</td>
+              <td class="num">${fmt$(r.AWS)}</td>
+              <td class="num">${fmt$(r.GCP)}</td>
+              <td class="num">${fmt$(r.Azure)}</td>
+              <td class="num">${fmt$(r['未對應'])}</td>
+              <td class="num">${fmtInt(r.input_tokens)}</td>
+              <td class="num">${fmtInt(r.output_tokens)}</td>
+              <td class="num"><strong>${fmt$(r.total_cost)}</strong></td>
+            </tr>
+          `).join('')}
+      </tbody>
+    </table>
+  `;
+      document.getElementById('tabByUser').innerHTML = html;
+    }
+
+    function renderByCloud(data) {
+      const byCloud = new Map();
+      for (const r of data.detailRows) {
+        const c = byCloud.get(r.cloud) || { cloud: r.cloud, input_tokens: 0, output_tokens: 0, messages: 0, total_cost: 0, users: new Set() };
+        c.input_tokens += r.input_tokens;
+        c.output_tokens += r.output_tokens;
+        c.messages += r.messages;
+        c.total_cost += r.total_cost;
+        c.users.add(r.user_id);
+        byCloud.set(r.cloud, c);
+      }
+      const rows = [...byCloud.values()].sort((a, b) => b.total_cost - a.total_cost);
+
+      const html = `
+    <table>
+      <thead>
+        <tr>
+          <th>雲端</th>
+          <th class="num">使用人數</th>
+          <th class="num">訊息數</th>
+          <th class="num">Input Tokens</th>
+          <th class="num">Output Tokens</th>
+          <th class="num">成本 (USD)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.length === 0 ? '<tr class="empty-row"><td colspan="6">無資料</td></tr>' :
+          rows.map(r => `
+            <tr>
+              <td>${cloudChip(r.cloud)}</td>
+              <td class="num">${fmtInt(r.users.size)}</td>
+              <td class="num">${fmtInt(r.messages)}</td>
+              <td class="num">${fmtInt(r.input_tokens)}</td>
+              <td class="num">${fmtInt(r.output_tokens)}</td>
+              <td class="num"><strong>${fmt$(r.total_cost)}</strong></td>
+            </tr>
+          `).join('')}
+      </tbody>
+    </table>
+  `;
+      document.getElementById('tabByCloud').innerHTML = html;
+    }
+
+    function renderDetail(data) {
+      const html = `
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>使用者</th>
+          <th>雲端</th>
+          <th>模型</th>
+          <th class="num">訊息數</th>
+          <th class="num">Input Tokens</th>
+          <th class="num">Output Tokens</th>
+          <th class="num">Input 成本</th>
+          <th class="num">Output 成本</th>
+          <th class="num">合計 (USD)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.detailRows.length === 0 ? '<tr class="empty-row"><td colspan="10">無資料</td></tr>' :
+          data.detailRows.map((r, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${escapeHtml(r.user_name)}<br/><span class="small">${escapeHtml(r.user_email || '')}</span></td>
+              <td>${cloudChip(r.cloud)}</td>
+              <td>${escapeHtml(r.model_display)}<br/><span class="small">${escapeHtml(r.model_id)}</span></td>
+              <td class="num">${fmtInt(r.messages)}</td>
+              <td class="num">${fmtInt(r.input_tokens)}</td>
+              <td class="num">${fmtInt(r.output_tokens)}</td>
+              <td class="num">${fmt$(r.input_cost)}</td>
+              <td class="num">${fmt$(r.output_cost)}</td>
+              <td class="num"><strong>${fmt$(r.total_cost)}</strong></td>
+            </tr>
+          `).join('')}
+      </tbody>
+    </table>
+  `;
+      document.getElementById('tabDetail').innerHTML = html;
+    }
+
+    function renderUnknown(data) {
+      if (!data.unknownModelCounts.length) {
+        document.getElementById('tabUnknown').innerHTML = '<p class="small" style="padding:12px 0;">✅ 所有 model_id 都已成功對應到定價列。</p>';
+        return;
+      }
+      const html = `
+    <p class="hint warn">下列 model_id 沒有對應到定價表任何一列，成本被計為 $0。請到上方「模型定價」表新增 / 修改比對字串，然後重新抓取。</p>
+    <table>
+      <thead>
+        <tr>
+          <th>model_id</th>
+          <th class="num">訊息數</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.unknownModelCounts.map(([mid, cnt]) => `
+          <tr>
+            <td><code>${escapeHtml(mid)}</code></td>
+            <td class="num">${fmtInt(cnt)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+      document.getElementById('tabUnknown').innerHTML = html;
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // ---------- CSV export ----------
+    function toCsv(headers, rows) {
+      const escape = v => {
+        const s = v == null ? '' : String(v);
+        if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+        return s;
+      };
+      const lines = [headers.map(escape).join(',')];
+      for (const r of rows) lines.push(r.map(escape).join(','));
+      return '\uFEFF' + lines.join('\r\n');
+    }
+
+    function downloadCsv(filename, csv) {
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportByUser() {
+      if (!reportData) return;
+      const byUser = new Map();
+      for (const r of reportData.detailRows) {
+        const u = byUser.get(r.user_id) || { name: r.user_name, email: r.user_email, input: 0, output: 0, cost: 0, AWS: 0, GCP: 0, Azure: 0, Other: 0 };
+        u.input += r.input_tokens; u.output += r.output_tokens; u.cost += r.total_cost;
+        u[r.cloud] = (u[r.cloud] || 0) + r.total_cost;
+        byUser.set(r.user_id, u);
+      }
+      const rows = [...byUser.values()].sort((a, b) => b.cost - a.cost).map(u => [
+        u.name, u.email, u.input, u.output,
+        u.AWS.toFixed(4), u.GCP.toFixed(4), u.Azure.toFixed(4), (u['未對應'] || 0).toFixed(4),
+        u.cost.toFixed(4),
+      ]);
+      downloadCsv(`billing_by_user_${reportData.range.startDate}_${reportData.range.endDate}.csv`,
+        toCsv(['使用者', 'Email', 'Input Tokens', 'Output Tokens', 'AWS 成本(USD)', 'GCP 成本(USD)', 'Azure 成本(USD)', '未對應成本(USD)', '總成本(USD)'], rows));
+    }
+
+    function exportDetail() {
+      if (!reportData) return;
+      const rows = reportData.detailRows.map(r => [
+        r.user_name, r.user_email, r.cloud, r.model_display, r.model_id, r.messages,
+        r.input_tokens, r.output_tokens,
+        r.input_price.toFixed(4), r.output_price.toFixed(4),
+        r.input_cost.toFixed(4), r.output_cost.toFixed(4), r.total_cost.toFixed(4),
+      ]);
+      downloadCsv(`billing_detail_${reportData.range.startDate}_${reportData.range.endDate}.csv`,
+        toCsv(['使用者', 'Email', '雲端', '模型', 'Model ID', '訊息數',
+          'Input Tokens', 'Output Tokens', 'Input 單價 ($/1M)', 'Output 單價 ($/1M)',
+          'Input 成本(USD)', 'Output 成本(USD)', '合計(USD)'], rows));
+    }
+
+    function exportByCloud() {
+      if (!reportData) return;
+      const byCloud = new Map();
+      for (const r of reportData.detailRows) {
+        const c = byCloud.get(r.cloud) || { cloud: r.cloud, users: new Set(), msgs: 0, input: 0, output: 0, cost: 0 };
+        c.users.add(r.user_id); c.msgs += r.messages; c.input += r.input_tokens; c.output += r.output_tokens; c.cost += r.total_cost;
+        byCloud.set(r.cloud, c);
+      }
+      const rows = [...byCloud.values()].sort((a, b) => b.cost - a.cost).map(c => [
+        c.cloud, c.users.size, c.msgs, c.input, c.output, c.cost.toFixed(4),
+      ]);
+      downloadCsv(`billing_by_cloud_${reportData.range.startDate}_${reportData.range.endDate}.csv`,
+        toCsv(['雲端', '使用人數', '訊息數', 'Input Tokens', 'Output Tokens', '成本(USD)'], rows));
+    }
+
+    // ---------- Email composer ----------
+    const DEFAULT_MAIL_SUBJECT = 'AI 平台用量成本報表 ({{reportPeriod}})';
+
+    const DEFAULT_MAIL_TEMPLATE = `<p>各位主管 / 同仁您好：</p>
+
+<p>附件為 <strong>{{reportPeriod}}</strong> 的 AI 平台用量成本報表，重點摘要如下：</p>
+
+<ul>
+  <li>總成本：<strong>{{totalCost}}</strong></li>
+  <li>使用人數：{{userCount}}</li>
+  <li>計費模型數：{{modelCount}}</li>
+  <li>計費訊息數：{{messageCount}}</li>
+  <li>Input Tokens：{{inputTokens}}</li>
+  <li>Output Tokens：{{outputTokens}}</li>
+</ul>
+
+<h3>依雲端拆分</h3>
+{{cloudTable}}
+
+<h3>使用者成本排行（Top 10）</h3>
+{{topUsers}}
+
+<p>完整明細請參考附件 CSV，如有任何問題請與 AI 部門聯繫。</p>
+
+<p style="color:#6b7280; font-size:12px; margin-top:24px;">
+  本信件由 AI 平台用量成本報表系統自動產生於 {{generatedAt}}。
+</p>`;
+
+    const MAIL_FIELDS = [
+      'smtpHost', 'smtpPort', 'smtpSecure', 'smtpUser', 'smtpPass',
+      'smtpFromName', 'smtpFromEmail', 'smtpRelayUrl',
+      'mailTo', 'mailCc', 'mailBcc', 'mailSubject', 'mailBody'
+    ];
+    const MAIL_CHECKBOXES = ['attachByUser', 'attachDetail', 'attachByCloud'];
+
+    function initMailFromStorage() {
+      const s = loadSettings() || {};
+      const m = s.mail || {};
+      for (const k of MAIL_FIELDS) {
+        const el = document.getElementById(k);
+        if (m[k] !== undefined && m[k] !== null) el.value = m[k];
+      }
+      for (const k of MAIL_CHECKBOXES) {
+        const el = document.getElementById(k);
+        if (m[k] !== undefined) el.checked = !!m[k];
+      }
+      // Defaults
+      if (!document.getElementById('smtpPort').value) document.getElementById('smtpPort').value = '587';
+      if (!document.getElementById('smtpSecure').value) document.getElementById('smtpSecure').value = 'starttls';
+      if (!document.getElementById('mailSubject').value) document.getElementById('mailSubject').value = DEFAULT_MAIL_SUBJECT;
+      if (!document.getElementById('mailBody').value) document.getElementById('mailBody').value = DEFAULT_MAIL_TEMPLATE;
+    }
+
+    function readMailSettings() {
+      const m = {};
+      for (const k of MAIL_FIELDS) m[k] = document.getElementById(k).value;
+      for (const k of MAIL_CHECKBOXES) m[k] = document.getElementById(k).checked;
+      return m;
+    }
+
+    function saveMailToStorage() {
+      saveSettings({ mail: readMailSettings() });
+    }
+
+    function splitAddresses(s) {
+      return (s || '').split(/[,;\n]/).map(x => x.trim()).filter(Boolean);
+    }
+
+    function renderTemplate(template, ctx) {
+      return String(template || '').replace(/\{\{\s*(\w+)\s*\}\}/g, (m, key) =>
+        ctx[key] !== undefined ? String(ctx[key]) : m
+      );
+    }
+
+    function buildEmailContext(data) {
+      const totalCost = data.detailRows.reduce((s, r) => s + r.total_cost, 0);
+      const totalInput = data.detailRows.reduce((s, r) => s + r.input_tokens, 0);
+      const totalOutput = data.detailRows.reduce((s, r) => s + r.output_tokens, 0);
+      const userSet = new Set(data.detailRows.map(r => r.user_id));
+      const modelSet = new Set(data.detailRows.map(r => r.model_display));
+
+      // by user
+      const byUser = new Map();
+      for (const r of data.detailRows) {
+        const u = byUser.get(r.user_id) || {
+          name: r.user_name, email: r.user_email,
+          AWS: 0, GCP: 0, Azure: 0, '未對應': 0,
+          input: 0, output: 0, cost: 0,
+        };
+        u.AWS += (r.cloud === 'AWS' ? r.total_cost : 0);
+        u.GCP += (r.cloud === 'GCP' ? r.total_cost : 0);
+        u.Azure += (r.cloud === 'Azure' ? r.total_cost : 0);
+        u['未對應'] += (r.cloud === '未對應' ? r.total_cost : 0);
+        u.input += r.input_tokens;
+        u.output += r.output_tokens;
+        u.cost += r.total_cost;
+        byUser.set(r.user_id, u);
+      }
+      const userRows = [...byUser.values()].sort((a, b) => b.cost - a.cost);
+      const topRows = userRows.slice(0, 10);
+
+      const userTableHtml = `<table><thead><tr><th>使用者</th><th>Email</th><th>AWS</th><th>GCP</th><th>Azure</th><th>總成本</th></tr></thead><tbody>${userRows.map(u =>
+        `<tr><td>${escapeHtml(u.name)}</td><td>${escapeHtml(u.email || '')}</td><td>${fmt$(u.AWS)}</td><td>${fmt$(u.GCP)}</td><td>${fmt$(u.Azure)}</td><td><strong>${fmt$(u.cost)}</strong></td></tr>`
+      ).join('')}</tbody></table>`;
+
+      const topUsersHtml = `<table><thead><tr><th>#</th><th>使用者</th><th>Email</th><th>AWS</th><th>GCP</th><th>Azure</th><th>總成本</th></tr></thead><tbody>${topRows.map((u, i) =>
+        `<tr><td>${i + 1}</td><td>${escapeHtml(u.name)}</td><td>${escapeHtml(u.email || '')}</td><td>${fmt$(u.AWS)}</td><td>${fmt$(u.GCP)}</td><td>${fmt$(u.Azure)}</td><td><strong>${fmt$(u.cost)}</strong></td></tr>`
+      ).join('')}</tbody></table>`;
+
+      // by cloud
+      const byCloud = new Map();
+      for (const r of data.detailRows) {
+        const c = byCloud.get(r.cloud) || { cloud: r.cloud, users: new Set(), msgs: 0, cost: 0 };
+        c.users.add(r.user_id);
+        c.msgs += r.messages;
+        c.cost += r.total_cost;
+        byCloud.set(r.cloud, c);
+      }
+      const cloudRows = [...byCloud.values()].sort((a, b) => b.cost - a.cost);
+      const cloudTableHtml = `<table><thead><tr><th>雲端</th><th>使用人數</th><th>訊息數</th><th>成本 (USD)</th></tr></thead><tbody>${cloudRows.map(c =>
+        `<tr><td>${escapeHtml(c.cloud)}</td><td>${c.users.size}</td><td>${fmtInt(c.msgs)}</td><td><strong>${fmt$(c.cost)}</strong></td></tr>`
+      ).join('')}</tbody></table>`;
+
+      return {
+        startDate: data.range.startDate || '',
+        endDate: data.range.endDate || '',
+        reportPeriod: `${data.range.startDate || '—'} ~ ${data.range.endDate || '—'}`,
+        totalCost: fmt$(totalCost),
+        userCount: fmtInt(userSet.size),
+        modelCount: fmtInt(modelSet.size),
+        messageCount: fmtInt(data.counts.messagesWithTokens),
+        inputTokens: fmtInt(totalInput),
+        outputTokens: fmtInt(totalOutput),
+        userTable: userTableHtml,
+        topUsers: topUsersHtml,
+        cloudTable: cloudTableHtml,
+        generatedAt: new Date().toLocaleString('zh-TW', { hour12: false }),
+      };
+    }
+
+    function wrapEmailHtml(body) {
+      return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif; color: #1f2937; line-height: 1.55; max-width: 820px; margin: 0; padding: 16px; }
+h2, h3 { color: #1e3a8a; margin-top: 20px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 8px 0; }
+th, td { border: 1px solid #e2e6ee; padding: 6px 10px; text-align: left; }
+th { background: #f4f6fa; }
+strong { color: #1d4ed8; }
+ul { padding-left: 20px; }
+li { margin-bottom: 2px; }
+</style></head><body>${body}</body></html>`;
+    }
+
+    // ---------- CSV builders (reusable for export + email attachments) ----------
+    function buildByUserCsvText() {
+      const byUser = new Map();
+      for (const r of reportData.detailRows) {
+        const u = byUser.get(r.user_id) || { name: r.user_name, email: r.user_email, input: 0, output: 0, cost: 0, AWS: 0, GCP: 0, Azure: 0, '未對應': 0 };
+        u.input += r.input_tokens; u.output += r.output_tokens; u.cost += r.total_cost;
+        u[r.cloud] = (u[r.cloud] || 0) + r.total_cost;
+        byUser.set(r.user_id, u);
+      }
+      const rows = [...byUser.values()].sort((a, b) => b.cost - a.cost).map(u => [
+        u.name, u.email, u.input, u.output,
+        u.AWS.toFixed(4), u.GCP.toFixed(4), u.Azure.toFixed(4), (u['未對應'] || 0).toFixed(4),
+        u.cost.toFixed(4),
+      ]);
+      return toCsv(['使用者', 'Email', 'Input Tokens', 'Output Tokens', 'AWS 成本(USD)', 'GCP 成本(USD)', 'Azure 成本(USD)', '未對應成本(USD)', '總成本(USD)'], rows);
+    }
+
+    function buildDetailCsvText() {
+      const rows = reportData.detailRows.map(r => [
+        r.user_name, r.user_email, r.cloud, r.model_display, r.model_id, r.messages,
+        r.input_tokens, r.output_tokens,
+        r.input_price.toFixed(4), r.output_price.toFixed(4),
+        r.input_cost.toFixed(4), r.output_cost.toFixed(4), r.total_cost.toFixed(4),
+      ]);
+      return toCsv(['使用者', 'Email', '雲端', '模型', 'Model ID', '訊息數',
+        'Input Tokens', 'Output Tokens', 'Input 單價 ($/1M)', 'Output 單價 ($/1M)',
+        'Input 成本(USD)', 'Output 成本(USD)', '合計(USD)'], rows);
+    }
+
+    function buildByCloudCsvText() {
+      const byCloud = new Map();
+      for (const r of reportData.detailRows) {
+        const c = byCloud.get(r.cloud) || { cloud: r.cloud, users: new Set(), msgs: 0, input: 0, output: 0, cost: 0 };
+        c.users.add(r.user_id); c.msgs += r.messages; c.input += r.input_tokens; c.output += r.output_tokens; c.cost += r.total_cost;
+        byCloud.set(r.cloud, c);
+      }
+      const rows = [...byCloud.values()].sort((a, b) => b.cost - a.cost).map(c => [
+        c.cloud, c.users.size, c.msgs, c.input, c.output, c.cost.toFixed(4),
+      ]);
+      return toCsv(['雲端', '使用人數', '訊息數', 'Input Tokens', 'Output Tokens', '成本(USD)'], rows);
+    }
+
+    function buildAttachmentList() {
+      if (!reportData) return [];
+      const rng = `${reportData.range.startDate}_${reportData.range.endDate}`;
+      const list = [];
+      if (document.getElementById('attachByUser').checked) {
+        list.push({ filename: `billing_by_user_${rng}.csv`, content: buildByUserCsvText(), contentType: 'text/csv; charset=UTF-8' });
+      }
+      if (document.getElementById('attachDetail').checked) {
+        list.push({ filename: `billing_detail_${rng}.csv`, content: buildDetailCsvText(), contentType: 'text/csv; charset=UTF-8' });
+      }
+      if (document.getElementById('attachByCloud').checked) {
+        list.push({ filename: `billing_by_cloud_${rng}.csv`, content: buildByCloudCsvText(), contentType: 'text/csv; charset=UTF-8' });
+      }
+      return list;
+    }
+
+    // ---------- Base64 / EML helpers ----------
+    function utf8ToBase64(str) {
+      const bytes = new TextEncoder().encode(str);
+      let binary = '';
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+      }
+      return btoa(binary);
+    }
+
+    function chunkBase64(b64) {
+      return (b64.match(/.{1,76}/g) || []).join('\r\n');
+    }
+
+    function encodeRfc2047(str) {
+      if (/^[\x00-\x7F]*$/.test(str)) return str;
+      return `=?UTF-8?B?${utf8ToBase64(str)}?=`;
+    }
+
+    function buildEml(payload) {
+      const boundary = '----=_BillingReport_' + Math.random().toString(36).slice(2, 12);
+      const fromHdr = payload.from.name
+        ? `${encodeRfc2047(payload.from.name)} <${payload.from.email}>`
+        : payload.from.email;
+
+      const lines = [];
+      lines.push(`From: ${fromHdr}`);
+      lines.push(`To: ${payload.to.join(', ')}`);
+      if (payload.cc.length) lines.push(`Cc: ${payload.cc.join(', ')}`);
+      lines.push(`Subject: ${encodeRfc2047(payload.subject)}`);
+      lines.push(`MIME-Version: 1.0`);
+      lines.push(`Date: ${new Date().toUTCString()}`);
+      lines.push(`Content-Type: multipart/mixed; boundary="${boundary}"`);
+      lines.push('');
+      lines.push(`--${boundary}`);
+      lines.push(`Content-Type: text/html; charset=UTF-8`);
+      lines.push(`Content-Transfer-Encoding: base64`);
+      lines.push('');
+      lines.push(chunkBase64(utf8ToBase64(payload.html)));
+      lines.push('');
+      for (const a of payload.attachments) {
+        lines.push(`--${boundary}`);
+        lines.push(`Content-Type: ${a.contentType || 'application/octet-stream'}; name="${a.filename}"`);
+        lines.push(`Content-Transfer-Encoding: base64`);
+        lines.push(`Content-Disposition: attachment; filename="${a.filename}"`);
+        lines.push('');
+        lines.push(chunkBase64(a.content));
+        lines.push('');
+      }
+      lines.push(`--${boundary}--`);
+      lines.push('');
+      return lines.join('\r\n');
+    }
+
+    // ---------- Email payload assembly ----------
+    function buildEmailPayload() {
+      if (!reportData) throw new Error('請先抓取資料產生報表');
+      const settings = readMailSettings();
+      const to = splitAddresses(settings.mailTo);
+      if (!to.length) throw new Error('請填寫收件者 (To)');
+      if (!settings.smtpFromEmail) throw new Error('請填寫寄件人 Email');
+
+      const ctx = buildEmailContext(reportData);
+      const subject = renderTemplate(settings.mailSubject || DEFAULT_MAIL_SUBJECT, ctx);
+      const bodyHtml = renderTemplate(settings.mailBody || DEFAULT_MAIL_TEMPLATE, ctx);
+
+      const attachments = buildAttachmentList().map(a => ({
+        filename: a.filename,
+        contentType: a.contentType,
+        content: utf8ToBase64(a.content),
+      }));
+
+      return {
+        smtp: {
+          host: settings.smtpHost,
+          port: parseInt(settings.smtpPort) || 587,
+          secure: settings.smtpSecure || 'starttls',
+          user: settings.smtpUser,
+          pass: settings.smtpPass,
+        },
+        from: { name: settings.smtpFromName || '', email: settings.smtpFromEmail },
+        to,
+        cc: splitAddresses(settings.mailCc),
+        bcc: splitAddresses(settings.mailBcc),
+        subject,
+        html: wrapEmailHtml(bodyHtml),
+        attachments,
+      };
+    }
+
+    function setMailStatus(text, kind) {
+      const el = document.getElementById('mailSendStatus');
+      el.textContent = text || '';
+      el.style.color = kind === 'error' ? 'var(--danger)'
+        : kind === 'success' ? 'var(--success)'
+        : 'var(--muted)';
+    }
+
+    async function sendMail() {
+      const btn = document.getElementById('sendMail');
+      btn.disabled = true;
+      setMailStatus('寄送中...');
+      try {
+        saveMailToStorage();
+        const payload = buildEmailPayload();
+        const relayUrl = readMailSettings().smtpRelayUrl;
+        if (!relayUrl) throw new Error('請先設定 SMTP Relay API URL，或改用「下載 .eml」');
+        if (!payload.smtp.host) throw new Error('請先填寫 SMTP 主機');
+
+        const r = await fetch(relayUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!r.ok) {
+          const text = await r.text().catch(() => '');
+          throw new Error(`Relay 回傳 ${r.status}: ${text.slice(0, 300)}`);
+        }
+        setMailStatus(`✅ 已寄出（共 ${payload.to.length + payload.cc.length + payload.bcc.length} 位收件者）`, 'success');
+      } catch (e) {
+        setMailStatus('❌ ' + e.message, 'error');
+        console.error(e);
+      } finally {
+        btn.disabled = false;
+        setTimeout(() => setMailStatus(''), 10000);
+      }
+    }
+
+    function downloadEml() {
+      try {
+        saveMailToStorage();
+        const payload = buildEmailPayload();
+        const eml = buildEml(payload);
+        const filename = `billing_report_${reportData.range.startDate}_${reportData.range.endDate}.eml`;
+        const blob = new Blob([eml], { type: 'message/rfc822' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename; a.click();
+        URL.revokeObjectURL(url);
+        setMailStatus('✅ 已下載 .eml — 在 Outlook / Apple Mail / Thunderbird 開啟即可寄送', 'success');
+        setTimeout(() => setMailStatus(''), 10000);
+      } catch (e) {
+        setMailStatus('❌ ' + e.message, 'error');
+        console.error(e);
+      }
+    }
+
+    function previewMail() {
+      try {
+        const payload = buildEmailPayload();
+        const innerHtml = payload.html
+          .replace(/^[\s\S]*?<body[^>]*>/i, '')
+          .replace(/<\/body>[\s\S]*$/i, '');
+
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop';
+        modal.innerHTML = `
+          <div class="modal" role="dialog" aria-label="信件預覽">
+            <div class="modal-header">
+              <h3>📧 信件預覽</h3>
+              <button class="modal-close" type="button" aria-label="關閉">&times;</button>
+            </div>
+            <div class="modal-body">
+              <div class="preview-meta">
+                <div><span class="label">寄件:</span> ${escapeHtml(payload.from.name || '')} &lt;${escapeHtml(payload.from.email)}&gt;</div>
+                <div><span class="label">收件:</span> ${escapeHtml(payload.to.join(', '))}</div>
+                ${payload.cc.length ? `<div><span class="label">副本:</span> ${escapeHtml(payload.cc.join(', '))}</div>` : ''}
+                ${payload.bcc.length ? `<div><span class="label">密件:</span> ${escapeHtml(payload.bcc.join(', '))}</div>` : ''}
+                <div><span class="label">主旨:</span> <strong>${escapeHtml(payload.subject)}</strong></div>
+                ${payload.attachments.length ? `<div><span class="label">附件:</span> ${payload.attachments.map(a => escapeHtml(a.filename)).join(', ')}</div>` : '<div><span class="label">附件:</span> <span class="small">無</span></div>'}
+              </div>
+              <div class="preview-body">${innerHtml}</div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="modal-close-btn">關閉</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        const close = () => modal.remove();
+        modal.querySelector('.modal-close').addEventListener('click', close);
+        modal.querySelector('.modal-close-btn').addEventListener('click', close);
+        modal.addEventListener('click', e => { if (e.target === modal) close(); });
+        document.addEventListener('keydown', function onEsc(e) {
+          if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onEsc); }
+        });
+      } catch (e) {
+        alert('預覽失敗：' + e.message);
+      }
+    }
+
+    // ---------- Events ----------
+    document.getElementById('addPricingRow').addEventListener('click', () => {
+      document.getElementById('pricingBody').appendChild(buildPricingRow({ cloud: 'Other' }));
+    });
+    document.getElementById('resetPricing').addEventListener('click', () => {
+      if (confirm('重設定價為預設值？（您目前的修改會丟失）')) renderPricing(DEFAULT_PRICING);
+    });
+    document.getElementById('savePricing').addEventListener('click', () => {
+      const pricing = readPricing();
+      const now = new Date().toISOString().slice(0, 10);
+      saveSettings({ pricing, pricingUpdatedAt: now });
+      document.getElementById('pricingUpdatedAt').textContent = now;
+      const st = document.getElementById('pricingSaveStatus');
+      st.textContent = '已儲存';
+      setTimeout(() => { st.textContent = ''; }, 2000);
+    });
+
+    ['apiUrl', 'apiKey', 'startDate', 'endDate'].forEach(id => {
+      document.getElementById(id).addEventListener('change', () => {
+        const s = {};
+        s[id] = document.getElementById(id).value;
+        saveSettings(s);
+      });
+    });
+
+    document.getElementById('fetchBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('fetchBtn');
+      const cancel = document.getElementById('cancelBtn');
+      btn.disabled = true;
+      cancel.style.display = '';
+      setStatus('');
+      fetchAborter = new AbortController();
+      try {
+        saveSettings({ pricing: readPricing() });
+        const data = await fetchData(fetchAborter.signal);
+        renderReport(data);
+        hideProgress();
+        setStatus(`完成 — 計費訊息 ${data.counts.messagesWithTokens} / 區間內 ${data.counts.messagesInRange} / 全部抓取 ${data.counts.messagesFetched}（共 ${data.counts.apiCalls} 次 API 呼叫）`);
+      } catch (e) {
+        hideProgress();
+        setStatus(e.message, true);
+        console.error(e);
+      } finally {
+        btn.disabled = false;
+        cancel.style.display = 'none';
+        fetchAborter = null;
+      }
+    });
+
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      if (fetchAborter) fetchAborter.abort();
+    });
+
+    document.querySelectorAll('.tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        ['byUser', 'byCloud', 'detail', 'unknown'].forEach(n => {
+          document.getElementById('tab' + n.charAt(0).toUpperCase() + n.slice(1)).style.display = (n === t.dataset.tab) ? '' : 'none';
+        });
+      });
+    });
+
+    document.getElementById('exportByUser').addEventListener('click', exportByUser);
+    document.getElementById('exportDetail').addEventListener('click', exportDetail);
+    document.getElementById('exportByCloud').addEventListener('click', exportByCloud);
+
+    document.getElementById('previewMail').addEventListener('click', previewMail);
+    document.getElementById('downloadEml').addEventListener('click', downloadEml);
+    document.getElementById('sendMail').addEventListener('click', sendMail);
+
+    document.getElementById('saveMailSettings').addEventListener('click', () => {
+      saveMailToStorage();
+      const st = document.getElementById('mailSaveStatus');
+      st.textContent = '✅ 已儲存';
+      setTimeout(() => { st.textContent = ''; }, 2000);
+    });
+
+    document.getElementById('resetMailTemplate').addEventListener('click', () => {
+      if (!confirm('重設信件主旨與內文為預設模板？（您目前的修改會丟失）')) return;
+      document.getElementById('mailSubject').value = DEFAULT_MAIL_SUBJECT;
+      document.getElementById('mailBody').value = DEFAULT_MAIL_TEMPLATE;
+      saveMailToStorage();
+      const st = document.getElementById('mailSaveStatus');
+      st.textContent = '已重設';
+      setTimeout(() => { st.textContent = ''; }, 2000);
+    });
+
+    [...MAIL_FIELDS, ...MAIL_CHECKBOXES].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('change', saveMailToStorage);
+      if (el.tagName === 'TEXTAREA' || el.type === 'text' || el.type === 'password' || el.type === 'email') {
+        el.addEventListener('blur', saveMailToStorage);
+      }
+    });
+
+    initFromStorage();
+    initMailFromStorage();
+  </script>
+</body>
+
+</html>
