@@ -7,7 +7,10 @@ import fs from 'node:fs';
 const config = {
 	// Consult https://kit.svelte.dev/docs/integrations#preprocessors
 	// for more information about preprocessors
-	preprocess: vitePreprocess(),
+	// `script: true` routes <script lang="ts"> through esbuild instead of Svelte 5's
+	// built-in type stripper, which leaves optional-parameter markers (e.g. `text?`)
+	// in the emitted JS and breaks the build.
+	preprocess: vitePreprocess({ script: true }),
 	kit: {
 		// adapter-auto only supports some environments, see https://kit.svelte.dev/docs/adapter-auto for a list.
 		// If your environment is not supported or you settled on a specific environment, switch out the adapter.
