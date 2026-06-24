@@ -1,0 +1,135 @@
+/* =========================================================================
+   YFY 品牌配色 — 僅亮色模式 (html.light)
+   暗色模式 (html.dark) 維持 Open WebUI 原樣。
+   透過 src/app.html 的 <link href="/static/custom.css"> 載入,免重新編譯。
+   ========================================================================= */
+
+/* 1) 頁面背景 #d4d8db ---------------------------------------------------- */
+html.light .app > div {
+	background-color: #d4d8db !important;
+}
+html.light #chat-container {
+	background-color: #d4d8db !important;
+}
+
+/* 2) 側邊欄:整片統一深色 #404445,文字轉淺色 --------------------------- */
+html.light #sidebar {
+	background-color: #404445 !important;
+	border-color: #323637 !important;
+}
+html.light #sidebar,
+html.light #sidebar * {
+	color: #e5e7eb !important;
+}
+/* sticky 頂列 / 底列容器(.sidebar)與本體同色,避免色塊不一致 */
+html.light #sidebar .sidebar {
+	background-color: #404445 !important;
+}
+/* 移除上/下方的 from-gray-50 漸層遮罩 —— 亮色下會變成近白色帶,造成左下角異色 */
+html.light .sidebar-bg-gradient-to-t,
+html.light .sidebar-bg-gradient-to-b {
+	background-image: none !important;
+	background: transparent !important;
+}
+/* hover 互動回饋:用較深一階 #323637 */
+html.light #sidebar a:hover,
+html.light #sidebar button:hover {
+	background-color: #323637 !important;
+}
+
+/* 2b) 對話列表:選取中 / hover 的聊天列與右側標題遮罩 ----------------------
+   open-webui 在亮色主題給「選取中(id===$chatId)」「多選」「hover」的列套
+   bg-gray-100(≈#f3f4f6 近白)、右側標題淡出遮罩用 from-gray-100 漸層,壓在
+   深色側邊欄上就變成「白塊 / 整列白掉」。這裡統一改成與側邊欄一致的深色。
+   注意:對話、頻道、資料夾、釘選模型的選取狀態都共用 .selected 標記。 */
+
+/* 選取中的列(對話 / 頻道 / 資料夾 …):比側邊欄亮一階 #565b5c 當作高亮 */
+html.light #sidebar .selected {
+	background-color: #565b5c !important;
+}
+
+/* 對話列右側「標題淡出遮罩」(原 from-gray-100 近白漸層)→ 與底色一致的深色漸層 */
+html.light #sidebar #sidebar-chat-item-menu.selected {
+	background-image: linear-gradient(to left, #565b5c 80%, transparent) !important;
+}
+
+/* hover 尚未選取的對話列(整列 + 右側遮罩一起,避免 hover 時右邊閃白) */
+html.light #sidebar #sidebar-chat-group:hover #sidebar-chat-item {
+	background-color: #323637 !important;
+}
+html.light #sidebar #sidebar-chat-group:hover #sidebar-chat-item-menu {
+	background-image: linear-gradient(to left, #323637 80%, transparent) !important;
+}
+
+/* 3) 右上角 header 圖示 #7f8084 ----------------------------------------- */
+html.light #chat-container .text-gray-600 {
+	color: #7f8084 !important;
+}
+
+/* 4) 橘色強調色 #d26814 ------------------------------------------------- */
+/* 4a) 對話框上方 / placeholder 的 model 名稱 */
+html.light #chat-container .font-primary .capitalize {
+	color: #d26814 !important;
+}
+/* 4b) 通話/送出圓形按鈕(原 bg-black) */
+html.light #message-input-container button.bg-black {
+	background-color: #d26814 !important;
+	color: #ffffff !important;
+}
+html.light #message-input-container button.bg-black svg {
+	color: #ffffff !important;
+	fill: #ffffff !important;
+}
+html.light #send-message-button {
+	background-color: #d26814 !important;
+}
+
+/* 5) 問候副標「今天我能為您做些什麼?」 #1a1e21 -------------------------- */
+html.light #chat-container .font-primary .text-gray-400 {
+	color: #1a1e21 !important;
+}
+
+/* 6) 對話框輸入區背景 #eaeeef ------------------------------------------- */
+html.light #message-input-container {
+	background-color: #eaeeef !important;
+}
+html.light #chat-input {
+	background-color: transparent !important;
+}
+
+/* 7) admin / 設定 上方分頁(未選取)文字 --------------------------------
+   open-webui 未選取分頁用 text-gray-300(亮色 ≈ #d1d5db),壓在頁面底
+   #d4d8db 上幾乎同色、看不清楚。加深成可讀的灰,hover 再轉近黑。
+   選擇器只命中「含 .text-gray-300 的 /admin* 連結」→ 不影響「選取中」分頁
+   (選取中那欄 class 為空字串、繼承預設深色,本來就清楚)。 */
+html.light a[href^="/admin"].text-gray-300 {
+	color: #4b5563 !important;
+}
+html.light a[href^="/admin"].text-gray-300:hover {
+	color: #1a1e21 !important;
+}
+
+/* =========================================================================
+   深色品牌版 (html.dark)
+   保留 Open WebUI 原生深色背景與淺色文字(維持可讀性),
+   只把橘色強調色 #d26814 帶進深色模式,讓明/暗都有一致的品牌感。
+   ========================================================================= */
+
+/* model 名稱(深色預設 dark:text-gray-100)→ 橘色 */
+html.dark #chat-container .font-primary .capitalize {
+	color: #d26814 !important;
+}
+
+/* 主要動作按鈕:通話 / 送出(深色預設 dark:bg-white 白底黑字)→ 橘底白字 */
+html.dark #message-input-container button.bg-black {
+	background-color: #d26814 !important;
+	color: #ffffff !important;
+}
+html.dark #message-input-container button.bg-black svg {
+	color: #ffffff !important;
+	fill: #ffffff !important;
+}
+html.dark #send-message-button {
+	background-color: #d26814 !important;
+	color: #ffffff !important;
+}

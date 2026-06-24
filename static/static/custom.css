@@ -37,6 +37,30 @@ html.light #sidebar button:hover {
 	background-color: #323637 !important;
 }
 
+/* 2b) 對話列表:選取中 / hover 的聊天列與右側標題遮罩 ----------------------
+   open-webui 在亮色主題給「選取中(id===$chatId)」「多選」「hover」的列套
+   bg-gray-100(≈#f3f4f6 近白)、右側標題淡出遮罩用 from-gray-100 漸層,壓在
+   深色側邊欄上就變成「白塊 / 整列白掉」。這裡統一改成與側邊欄一致的深色。
+   注意:對話、頻道、資料夾、釘選模型的選取狀態都共用 .selected 標記。 */
+
+/* 選取中的列(對話 / 頻道 / 資料夾 …):比側邊欄亮一階 #565b5c 當作高亮 */
+html.light #sidebar .selected {
+	background-color: #565b5c !important;
+}
+
+/* 對話列右側「標題淡出遮罩」(原 from-gray-100 近白漸層)→ 與底色一致的深色漸層 */
+html.light #sidebar #sidebar-chat-item-menu.selected {
+	background-image: linear-gradient(to left, #565b5c 80%, transparent) !important;
+}
+
+/* hover 尚未選取的對話列(整列 + 右側遮罩一起,避免 hover 時右邊閃白) */
+html.light #sidebar #sidebar-chat-group:hover #sidebar-chat-item {
+	background-color: #323637 !important;
+}
+html.light #sidebar #sidebar-chat-group:hover #sidebar-chat-item-menu {
+	background-image: linear-gradient(to left, #323637 80%, transparent) !important;
+}
+
 /* 3) 右上角 header 圖示 #7f8084 ----------------------------------------- */
 html.light #chat-container .text-gray-600 {
 	color: #7f8084 !important;
@@ -71,6 +95,18 @@ html.light #message-input-container {
 }
 html.light #chat-input {
 	background-color: transparent !important;
+}
+
+/* 7) admin / 設定 上方分頁(未選取)文字 --------------------------------
+   open-webui 未選取分頁用 text-gray-300(亮色 ≈ #d1d5db),壓在頁面底
+   #d4d8db 上幾乎同色、看不清楚。加深成可讀的灰,hover 再轉近黑。
+   選擇器只命中「含 .text-gray-300 的 /admin* 連結」→ 不影響「選取中」分頁
+   (選取中那欄 class 為空字串、繼承預設深色,本來就清楚)。 */
+html.light a[href^="/admin"].text-gray-300 {
+	color: #4b5563 !important;
+}
+html.light a[href^="/admin"].text-gray-300:hover {
+	color: #1a1e21 !important;
 }
 
 /* =========================================================================
