@@ -4,7 +4,7 @@
 
 	import { toast } from 'svelte-sonner';
 
-	import { onMount, getContext, tick } from 'svelte';
+	import { onMount, getContext } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 
@@ -41,6 +41,8 @@
 	let confirmPassword = '';
 
 	let ldapUsername = '';
+
+	let submitting = false;
 
 	const setSessionUser = async (sessionUser, redirectPath: string | null = null) => {
 		if (sessionUser) {
@@ -104,12 +106,21 @@
 	};
 
 	const submitHandler = async () => {
-		if (mode === 'ldap') {
-			await ldapSignInHandler();
-		} else if (mode === 'signin') {
-			await signInHandler();
-		} else {
-			await signUpHandler();
+		if (submitting) {
+			return;
+		}
+
+		submitting = true;
+		try {
+			if (mode === 'ldap') {
+				await ldapSignInHandler();
+			} else if (mode === 'signin') {
+				await signInHandler();
+			} else {
+				await signUpHandler();
+			}
+		} finally {
+			submitting = false;
 		}
 	};
 
@@ -144,7 +155,9 @@
 
 	onMount(async () => {
 		const redirectPath = $page.url.searchParams.get('redirect');
-		if ($user !== undefined) {
+		const logout = $page.url.searchParams.get('state') === 'logout';
+
+		if ($user && !logout) {
 			goto(redirectPath || '/');
 		} else {
 			if (redirectPath) {
@@ -162,9 +175,9 @@
 
 		// Auto-redirect to SSO when OAUTH_AUTO_REDIRECT is enabled and the
 		// deployment is unambiguously SSO-only (single provider, no login form,
-		// no LDAP). Suppressed by ?form=, ?error=, onboarding, trusted-header
-		// auth, or an existing session/token.
-		if ($config?.oauth?.auto_redirect && !form && !error) {
+		// no LDAP). Suppressed after logout, by ?form=, ?error=, onboarding,
+		// trusted-header auth, or an existing session/token.
+		if ($config?.oauth?.auto_redirect && !logout && !form && !error) {
 			const providers = Object.keys($config?.oauth?.providers ?? {});
 			if (
 				providers.length === 1 &&
@@ -192,6 +205,9 @@
 </script>
 
 <svelte:head>
+	<!-- LICENSE covers this Open WebUI browser-title identifier.
+	Do not alter, remove, obscure, or replace it except as LICENSE permits:
+	https://docs.openwebui.com/license. -->
 	<title>
 		{`${$WEBUI_NAME}`}
 	</title>
@@ -237,6 +253,9 @@
 									alt=""
 									aria-hidden="true"
 								/>
+								<!-- LICENSE covers this Open WebUI sign-in logo.
+								Do not alter, remove, obscure, or replace it except as LICENSE permits:
+								https://docs.openwebui.com/license. -->
 								<img
 									id="logo"
 									class="card-logo"
@@ -374,16 +393,22 @@
 
 								{#if $config?.features.enable_login_form || $config?.features.enable_ldap || form}
 									{#if mode === 'ldap'}
-										<button class="login-button" type="submit">
+										<button class="login-button" type="submit" disabled={submitting}>
 											{$i18n.t('Authenticate')}
+											{#if submitting}
+												<Spinner className="size-4" />
+											{/if}
 										</button>
 									{:else}
-										<button class="login-button" type="submit">
+										<button class="login-button" type="submit" disabled={submitting}>
 											{mode === 'signin'
 												? $i18n.t('Sign in')
 												: ($config?.onboarding ?? false)
 													? $i18n.t('Create Admin Account')
 													: $i18n.t('Create Account')}
+											{#if submitting}
+												<Spinner className="size-4" />
+											{/if}
 										</button>
 									{/if}
 
@@ -745,6 +770,10 @@
 	}
 
 	.login-button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.375rem;
 		width: 100%;
 		height: 44px;
 		margin: 18px 0 0;
@@ -764,7 +793,12 @@
 			box-shadow 0.2s ease;
 	}
 
-	.login-button:hover {
+	.login-button:disabled {
+		cursor: wait;
+		opacity: 0.5;
+	}
+
+	.login-button:hover:not(:disabled) {
 		color: #ffffff;
 		background: #404445;
 		border-color: #404445;
