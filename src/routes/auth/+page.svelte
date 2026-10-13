@@ -1,5 +1,9 @@
 <script lang="ts">
 	import DOMPurify from 'dompurify';
+	import MfaChallengeForm from '$lib/components/auth/MfaChallenge.svelte';
+	import { mfaRequest, type MfaChallenge } from '$lib/apis/auths/mfa';
+	let mfaChallenge: MfaChallenge | null = null;
+	let pendingApproval = false;
 	import { marked } from 'marked';
 
 	import { toast } from 'svelte-sonner';
@@ -46,7 +50,16 @@
 
 	const setSessionUser = async (sessionUser, redirectPath: string | null = null) => {
 		if (sessionUser) {
-			console.log(sessionUser);
+			if (sessionUser.next_step === 'pending') {
+				pendingApproval = true;
+				return;
+			}
+			if (sessionUser.challenge_token) {
+				mfaChallenge = sessionUser;
+				password = '';
+				confirmPassword = '';
+				return;
+			}
 			toast.success($i18n.t(`You're now logged in.`));
 			if (sessionUser.token) {
 				localStorage.token = sessionUser.token;
@@ -65,7 +78,7 @@
 				redirectPath = $page.url.searchParams.get('redirect') || '/';
 			}
 
-			goto(redirectPath);
+			await goto(redirectPath);
 			localStorage.removeItem('redirectPath');
 		}
 	};
@@ -170,7 +183,22 @@
 			toast.error(error);
 		}
 
-		await oauthCallbackHandler();
+		if ($page.url.searchParams.has('mfa')) {
+			localStorage.removeItem('token');
+			try {
+				mfaChallenge = await mfaRequest('challenge');
+			} catch (error) {
+				toast.error(error instanceof Error ? error.message : String(error));
+			}
+			loaded = true;
+			return;
+		}
+		if ($page.url.searchParams.has('pending')) {
+			pendingApproval = true;
+			loaded = true;
+			return;
+		}
+		if (!logout) await oauthCallbackHandler();
 		form = $page.url.searchParams.get('form');
 
 		// Auto-redirect to SSO when OAUTH_AUTO_REDIRECT is enabled and the
@@ -232,7 +260,28 @@
 			id="auth-container"
 		>
 			<div class="w-full px-4 sm:px-6 min-h-screen flex flex-col justify-center items-center">
-				{#if ($config?.features.auth_trusted_header ?? false) || $config?.features.auth === false}
+				{#if mfaChallenge}
+					<main class="yfy-shell">
+						<section class="yfy-card py-6">
+							<MfaChallengeForm
+								challenge={mfaChallenge}
+								onComplete={setSessionUser}
+								onCancel={() => {
+									mfaChallenge = null;
+									window.location.href = '/auth?state=logout&form=signin';
+								}}
+							/>
+						</section>
+					</main>
+				{:else if pendingApproval}
+					<main class="yfy-shell">
+						<section class="yfy-card py-6 text-center">
+							<p class="text-sm text-gray-600">
+								{$i18n.t('Your account is awaiting administrator approval.')}
+							</p>
+						</section>
+					</main>
+				{:else if ($config?.features.auth_trusted_header ?? false) || $config?.features.auth === false}
 					<main class="yfy-shell">
 						<div class="yfy-loading">
 							<div>
