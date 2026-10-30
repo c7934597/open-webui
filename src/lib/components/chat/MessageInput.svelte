@@ -63,6 +63,8 @@
 		isRasterImageContentType
 	} from '$lib/utils';
 	import { uploadFile } from '$lib/apis/files';
+	import { transcribeAudio } from '$lib/apis/audio';
+	import { getTemporaryAttachmentContent } from '$lib/utils/speechToText';
 	import { getCwd, uploadNewFileToTerminal } from '$lib/apis/terminal';
 	import { generateAutoCompletion } from '$lib/apis';
 	import { deleteFileById } from '$lib/apis/files';
@@ -1068,9 +1070,13 @@
 				onUpdate({ file: fileItem });
 			}
 		} else {
-			// If temporary chat is enabled, we just add the file to the list without uploading it.
-
-			const content = await extractContentFromFile(file).catch((error) => {
+			// Keep temporary attachments out of the file library; transcribe supported audio via Azure.
+			const content = await getTemporaryAttachmentContent(
+				file,
+				$config?.audio?.stt?.engine,
+				(audioFile) => transcribeAudio(localStorage.token, audioFile, $settings?.audio?.stt?.language),
+				extractContentFromFile
+			).catch((error) => {
 				toast.error(
 					$i18n.t('Failed to extract content from the file: {{error}}', { error: error })
 				);
@@ -1085,12 +1091,6 @@
 				onUpdate({ file: fileItem });
 				return null;
 			} else {
-				console.log('Extracted content from file:', {
-					name: file.name,
-					size: file.size,
-					content: content
-				});
-
 				fileItem.status = 'uploaded';
 				fileItem.type = 'text';
 				fileItem.content = content;

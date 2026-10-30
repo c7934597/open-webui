@@ -165,7 +165,8 @@
 		saveSettings({
 			audio: {
 				stt: {
-					engine: STTEngine !== '' ? STTEngine : undefined,
+					engine:
+						$config?.audio?.stt?.engine === 'azure' ? undefined : STTEngine || undefined,
 					language: STTLanguage !== '' ? STTLanguage : undefined
 				},
 				tts: {
@@ -192,14 +193,18 @@
 					label={$i18n.t('settings.personal.audio.speechToTextEngine.label')}
 					description={$i18n.t('settings.personal.audio.speechToTextEngine.description')}
 				>
-					<SettingsSelect
-						bind:value={STTEngine}
-						ariaLabel={$i18n.t('settings.personal.audio.speechToTextEngine.label')}
-						placeholder={$i18n.t('Select an engine')}
-					>
-						<option value="">{$i18n.t('Default')}</option>
-						<option value="web">{$i18n.t('Web API')}</option>
-					</SettingsSelect>
+					{#if $config?.audio?.stt?.engine === 'azure'}
+						<span class="text-xs text-gray-700 dark:text-gray-300">YFY Azure AI Speech</span>
+					{:else}
+						<SettingsSelect
+							bind:value={STTEngine}
+							ariaLabel={$i18n.t('settings.personal.audio.speechToTextEngine.label')}
+							placeholder={$i18n.t('Select an engine')}
+						>
+							<option value="">{$i18n.t('Default')}</option>
+							<option value="web">{$i18n.t('Web API')}</option>
+						</SettingsSelect>
+					{/if}
 				</UserSettingRow>
 
 				<UserSettingRow

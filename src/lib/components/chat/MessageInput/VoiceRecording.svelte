@@ -5,6 +5,7 @@
 	import { blobToFile, calculateSHA256, extractCurlyBraceWords } from '$lib/utils';
 
 	import { transcribeAudio } from '$lib/apis/audio';
+	import { shouldUseWebSpeech } from '$lib/utils/speechToText';
 	import XMark from '$lib/components/icons/XMark.svelte';
 
 	import dayjs from 'dayjs';
@@ -181,7 +182,7 @@
 		);
 
 		if (transcribe) {
-			if ($config.audio.stt.engine === 'web' || ($settings?.audio?.stt?.engine ?? '') === 'web') {
+			if (shouldUseWebSpeech($config.audio.stt.engine, $settings?.audio?.stt?.engine)) {
 				// with web stt, we don't need to send the file to the server
 				return;
 			}
@@ -301,7 +302,7 @@
 		}
 
 		if (transcribe) {
-			if ($config.audio.stt.engine === 'web' || ($settings?.audio?.stt?.engine ?? '') === 'web') {
+			if (shouldUseWebSpeech($config.audio.stt.engine, $settings?.audio?.stt?.engine)) {
 				if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
 					// reset accumulated transcription from previous sessions
 					transcription = '';
