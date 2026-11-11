@@ -24,6 +24,7 @@
 
 	export let className = ' p-2.5 w-full max-w-full';
 
+	export let confirmButtonId = 'confirm-recording-button';
 	export let onCancel = () => {};
 	export let onConfirm = (data) => {};
 
@@ -88,6 +89,7 @@
 	};
 
 	let stream;
+	let audioContext: AudioContext | null = null;
 	let speechRecognition;
 
 	let mediaRecorder;
@@ -117,8 +119,14 @@
 		return Math.min(1.0, Math.max(0.01, scaledRMS));
 	};
 
+	// Chrome on Android caps open audio outputs at 10.
+	const closeAudioContext = () => {
+		void audioContext?.close();
+		audioContext = null;
+	};
+
 	const analyseAudio = (stream) => {
-		const audioContext = new AudioContext();
+		audioContext = new AudioContext();
 		const audioStreamSource = audioContext.createMediaStreamSource(stream);
 
 		const analyser = audioContext.createAnalyser();
@@ -154,12 +162,6 @@
 
 					// if (domainData.some((value) => value > 0)) {
 					// 	lastSoundTime = Date.now();
-					// }
-
-					// if (recording && Date.now() - lastSoundTime > 3000) {
-					// 	if ($settings?.speechAutoSend ?? false) {
-					// 		confirmRecording();
-					// 	}
 					// }
 				}
 
@@ -258,6 +260,11 @@
 			console.log('Recording started');
 			loading = false;
 			startDurationCounter();
+
+			if (document.activeElement === document.body || !document.activeElement?.checkVisibility()) {
+				await tick();
+				document.getElementById(confirmButtonId)?.focus();
+			}
 
 			await requestWakeLock();
 
@@ -400,6 +407,7 @@
 		}
 
 		stream = null;
+		closeAudioContext();
 	};
 
 	const confirmRecording = async () => {
@@ -419,6 +427,7 @@
 		}
 
 		stream = null;
+		closeAudioContext();
 	};
 
 	let resizeObserver;
@@ -463,7 +472,9 @@
 	onDestroy(() => {
 		window.removeEventListener('keydown', handleKeyDown);
 		document.removeEventListener('visibilitychange', handleVisibilityChange);
+		stopRecording();
 		releaseWakeLock();
+		closeAudioContext();
 		// remove resize observer
 		resizeObserver.disconnect();
 	});
@@ -486,6 +497,7 @@
 
 
              rounded-full"
+			aria-label={$i18n.t('Cancel')}
 			on:click={async () => {
 				cancelRecording();
 				onCancel();
@@ -626,7 +638,7 @@
 				</div>
 			{:else}
 				<button
-					id="confirm-recording-button"
+					id={confirmButtonId}
 					type="button"
 					aria-label={$i18n.t('Confirm recording')}
 					class="p-1.5 bg-indigo-500 text-white dark:bg-indigo-500 dark:text-blue-950 rounded-full"

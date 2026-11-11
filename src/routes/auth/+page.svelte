@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { applyTetherToken } from '$lib/utils/tether';
+
 	import DOMPurify from 'dompurify';
 	import MfaChallengeForm from '$lib/components/auth/MfaChallenge.svelte';
 	import { mfaRequest, type MfaChallenge } from '$lib/apis/auths/mfa';
@@ -60,6 +62,16 @@
 				confirmPassword = '';
 				return;
 			}
+			if (window.tether && sessionUser.token) {
+				try {
+					const access = await window.tether.signedIn(sessionUser.token);
+					sessionUser = { ...sessionUser, token: access.token, expires_at: access.expiresAt };
+					await applyTetherToken(access);
+				} catch (error) {
+					toast.error(String(error));
+					return;
+				}
+			}
 			toast.success($i18n.t(`You're now logged in.`));
 			if (sessionUser.token) {
 				localStorage.token = sessionUser.token;
@@ -75,7 +87,8 @@
 			}
 
 			if (!redirectPath) {
-				redirectPath = $page.url.searchParams.get('redirect') || '/';
+				redirectPath =
+					sessionStorage.getItem('auth:continue') || $page.url.searchParams.get('redirect') || '/';
 			}
 
 			await goto(redirectPath);
@@ -161,7 +174,10 @@
 		}
 
 		localStorage.token = token;
-		await setSessionUser(sessionUser, localStorage.getItem('redirectPath') || null);
+		await setSessionUser(
+			sessionUser,
+			sessionStorage.getItem('auth:continue') || localStorage.getItem('redirectPath') || null
+		);
 	};
 
 	let onboarding = false;
@@ -250,11 +266,12 @@
 />
 
 <div class="w-full h-screen max-h-[100dvh] relative" id="auth-page">
+	<div id="main-content" tabindex="-1" class="sr-only left-0 top-0"></div>
 	<div class="w-full h-full absolute top-0 left-0 yfy-bg"></div>
 
 	<div class="w-full absolute top-0 left-0 right-0 h-8 drag-region" />
 
-	{#if loaded}
+	{#if loaded && !onboarding}
 		<div
 			class="fixed bg-transparent min-h-screen w-full flex justify-center items-center z-50"
 			id="auth-container"
