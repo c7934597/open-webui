@@ -484,6 +484,9 @@ async def ldap_auth(
             f'{LDAP_ATTRIBUTE_FOR_USERNAME}',
             f'{LDAP_ATTRIBUTE_FOR_MAIL}',
             'cn',
+            # YFY: in the company AD ``cn`` is the employee number; the person's
+            # name is in ``displayName``.
+            'displayName',
         ]
         if ENABLE_LDAP_GROUP_MANAGEMENT:
             search_attributes.append(f'{LDAP_ATTRIBUTE_FOR_GROUPS}')
@@ -524,6 +527,16 @@ async def ldap_auth(
             email = str(email).lower()
 
         cn = str(entry['cn'])  # common name
+        # YFY: show the AD display name (the person's name) instead of ``cn``
+        # (the employee number). Falls back to ``cn`` when it is empty.
+        try:
+            display_name = entry['displayName'].value
+        except Exception:
+            display_name = None
+        if isinstance(display_name, list):
+            display_name = display_name[0] if display_name else None
+        display_name = str(display_name).strip() if display_name else ''
+        display_name = display_name or cn
         user_dn = entry.entry_dn  # user distinguished name
 
         user_groups = []
@@ -595,7 +608,7 @@ async def ldap_auth(
                     user = await Auths.insert_new_auth(
                         email=email,
                         password=str(uuid.uuid4()),
-                        name=cn,
+                        name=display_name,
                         role=await Config.get('ui.default_user_role'),
                         db=db,
                     )
@@ -629,6 +642,15 @@ async def ldap_auth(
                 except Exception as err:
                     log.error(f'LDAP user creation error: {str(err)}')
                     raise HTTPException(500, detail='Internal error occurred during LDAP user creation.')
+            elif user.name == cn and display_name != cn:
+                # YFY: an account created before this fix still carries the
+                # employee number as its name. Replace it on the next sign-in;
+                # a name somebody edited by hand no longer equals ``cn`` and is
+                # left alone.
+                try:
+                    await Users.update_user_by_id(user.id, {'name': display_name}, db=db)
+                except Exception as err:
+                    log.warning(f'LDAP display name sync failed for {user.id}: {err}')
 
             user = await Auths.authenticate_user_by_email(email, db=db)
 
